@@ -33,7 +33,6 @@ type Car struct {
 	Updated      time.Time `json:"updated_at"`
 }
 
-
 func (c *Car) String() string {
 	return fmt.Sprintf("'%02d %v %v (%v) [VIN: %v]", c.Year%100, c.Manufacturer, c.Model, c.Color, c.VIN)
 }
@@ -50,11 +49,33 @@ func (c *Car) persist() error {
 	if err != nil {
 		return err
 	}
-	log.Println("Persisted", c.VIN)
+	log.Println("persisted", c.VIN)
 	return gob.NewEncoder(file).Encode(c)
 }
 
-func (c *Car) load(path string) error {
+func LoadAll() ([]*Car, error) {
+	files, err := filepath.Glob(persistPath + "/*")
+	if err != nil {
+		return nil, err
+	}
+	cars := make([]*Car, len(files))
+
+	for i, file := range files {
+		car := &Car{VIN: filepath.Base(file)}
+		if err := car.load(); err != nil {
+			panic(err)
+		}
+		cars[i] = car
+	}
+
+	return cars, nil
+}
+
+func (c *Car) load() error {
+	if c.VIN == "" {
+		return fmt.Errorf("No VIN to load from")
+	}
+	path := filepath.Join(persistPath, c.VIN)
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -64,7 +85,7 @@ func (c *Car) load(path string) error {
 	if err := gob.NewDecoder(file).Decode(c); err != nil {
 		return err
 	}
-	c.VIN = filepath.Base(path)
-	log.Println("Loaded", c.VIN)
+
+	log.Println("loaded", c.VIN)
 	return nil
 }

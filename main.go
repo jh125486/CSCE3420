@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/cars/", CarsHandler)
+	http.HandleFunc(carsPath, CarsHandler)
+	log.Println("starting server on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -4,76 +4,72 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"path/filepath"
 )
+
+const carsPath = "/cars/"
 
 // CarsHandler muxes the /cars route for the server
 func CarsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	vin := r.URL.Path[len("/cars/"):]
+	vin := r.URL.Path[len(carsPath):]
 
+	// Figure out what HTTP method was sent
 	switch r.Method {
 	case http.MethodGet: // show the collection or single car
 		switch len(vin) {
-		case 0:
+		case 0: // no VIN given
 			showCollection(w)
-		case 17: // magic number!
-			showCar(w, vin)
+		case vinLength: // proper length for a VIN
+			showSingle(w, vin)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println("Wrong length for VIN number")
 		}
 	case http.MethodPost: // create a new car
-		createCar(w, r)
+		create(w, r, vin)
 	case http.MethodPut, http.MethodPatch: // update a new car
-		updateCar(w, r, vin)
+		update(w, r, vin)
 	case http.MethodDelete: // remove a car
-		crushCar(w, vin)
+		crush(w, vin)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
 func showCollection(w http.ResponseWriter) {
-	cars := make([]Car, 0)
-	files, err := filepath.Glob(persistPath + "/*")
+	cars, err := LoadAll()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalln(err)
 	}
 
-	for _, file := range files {
-		car := &Car{}
-		if err := car.load(file); err != nil {
-			log.Fatalln(err)
-		} else {
-			cars = append(cars, *car)
-		}
-	}
-	log.Println("Loaded", len(cars), "cars")
+	log.Print("rendering collection:", len(cars))
 	json.NewEncoder(w).Encode(cars)
 }
 
-func showCar(w http.ResponseWriter, vin string) {
-	file := filepath.Join(persistPath, vin)
-	car := &Car{}
-	if err := car.load(file); err != nil {
+func showSingle(w http.ResponseWriter, vin string) {
+	car := &Car{VIN: vin}
+	if err := car.load(); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		log.Fatalln(err)
 		return
 	}
+
+	log.Println("rendering", car)
 	json.NewEncoder(w).Encode(car)
 }
 
-func createCar(w http.ResponseWriter, r *http.Request) {
-	car := &Car{}
+func create(w http.ResponseWriter, r *http.Request, vin string) {
+	car := &Car{VIN: vin}
 
+	// Marshal JSON into Car
 	if err := json.NewDecoder(r.Body).Decode(&car); err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		panic(err)
 	}
 	defer r.Body.Close()
 
+	// Try to save Car to disk
 	if err := car.persist(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -81,16 +77,17 @@ func createCar(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateCar(w http.ResponseWriter, r *http.Request, vin string) {
+func update(w http.ResponseWriter, r *http.Request, vin string) {
 	w.WriteHeader(http.StatusNotImplemented)
 	// YOUR CODE GOES HERE
 	// Ensure you return a proper HTTP Code (instead of StatusNotImplemented above)
 	// Make sure you only do a partial-update, i.e. only update the fields passed to the server
+	// Make sure the car is saved to disk
 }
 
-func crushCar(w http.ResponseWriter, vin string) {
+func crush(w http.ResponseWriter, vin string) {
 	w.WriteHeader(http.StatusNotImplemented)
 	// YOUR CODE GOES HERE
 	// Ensure you return a proper HTTP Code (instead of StatusNotImplemented above)
-	//
+	// Make sure the car is removed from disk
 }

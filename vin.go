@@ -5,6 +5,8 @@ import (
 	"math/rand"
 )
 
+const vinLength = 17
+
 func fakeVIN(m string) string {
 	const vinLetters = "ABCDEFGHJKLMNPRSTUVWXYZ1234567890"
 	var vin string
@@ -40,10 +42,12 @@ func fakeVIN(m string) string {
 		vin += "ZZ"
 	}
 
-	for len(vin) < 12 {
+	seqLength := 5
+	for len(vin) < (vinLength - seqLength) {
 		vin += string(vinLetters[rand.Intn(len(vinLetters))])
 	}
-	vin += fmt.Sprintf("%05d", rand.Intn(99999-1)+1)
+	seq := rand.Intn(99999-1) + 1
+	vin += fmt.Sprintf("%0[1]*[2]d", seqLength, seq)
 
 	return vin
 }
