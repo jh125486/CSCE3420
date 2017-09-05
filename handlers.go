@@ -2,92 +2,116 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+	"strings"
 )
 
-const carsPath = "/cars/"
+const (
+	carsPath         = "/cars"
+	badPathPrefixErr = Error("Bad path prefix")
+)
 
 // CarsHandler muxes the /cars route for the server
 func CarsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	vin := r.URL.Path[len(carsPath):]
 
 	// Figure out what HTTP method was sent
 	switch r.Method {
 	case http.MethodGet: // show the collection or single car
-		switch len(vin) {
-		case 0: // no VIN given
-			showCollection(w)
-		case vinLength: // proper length for a VIN
-			showSingle(w, vin)
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-			log.Println("Wrong length for VIN number")
-		}
+		carGetHandler(w, r)
 	case http.MethodPost: // create a new car
-		create(w, r, vin)
+		carCreateHandler(w, r)
 	case http.MethodPut, http.MethodPatch: // update a new car
-		update(w, r, vin)
+		carUpdateHandler(w, r)
 	case http.MethodDelete: // remove a car
-		crush(w, vin)
+		carDeleteHandler(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func showCollection(w http.ResponseWriter) {
-	cars, err := LoadAll()
+func carGetHandler(w http.ResponseWriter, r *http.Request) {
+	vin, err := extractVIN(r.URL.Path)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatalln(err)
-	}
-
-	log.Print("rendering collection:", len(cars))
-	json.NewEncoder(w).Encode(cars)
-}
-
-func showSingle(w http.ResponseWriter, vin string) {
-	car := &Car{VIN: vin}
-	if err := car.load(); err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		log.Fatalln(err)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	log.Println("rendering", car)
-	json.NewEncoder(w).Encode(car)
+	switch len(vin) {
+	case 0: // no VIN given
+		json.NewEncoder(w).Encode(garage)
+	case vinLength: // proper length for a VIN
+		car, err := garage.get(vin)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		json.NewEncoder(w).Encode(car)
+	}
 }
 
-func create(w http.ResponseWriter, r *http.Request, vin string) {
-	car := &Car{VIN: vin}
-
-	// Marshal JSON into Car
-	if err := json.NewDecoder(r.Body).Decode(&car); err != nil {
+func carCreateHandler(w http.ResponseWriter, r *http.Request) {
+	if vin, err := extractVIN(r.URL.Path); len(vin) > 0 || err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if r.Body == nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		panic(err)
+		return
 	}
+
 	defer r.Body.Close()
-
-	// Try to save Car to disk
-	if err := car.persist(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		w.WriteHeader(http.StatusCreated)
+	newCar := &Car{}
+	if err := json.NewDecoder(r.Body).Decode(newCar); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
 	}
+
+	// validate there isn't already a car in the garage with the same VIN
+	if garage.exists(newCar.VIN) {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	garage.add(newCar)
+	w.WriteHeader(http.StatusCreated)
 }
 
-func update(w http.ResponseWriter, r *http.Request, vin string) {
+func carUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 	// YOUR CODE GOES HERE
+
 	// Ensure you return a proper HTTP Code (instead of StatusNotImplemented above)
+	// HINT -> https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+
 	// Make sure you only do a partial-update, i.e. only update the fields passed to the server
-	// Make sure the car is saved to disk
+
+	// Make sure the car is saved to the garage
 }
 
-func crush(w http.ResponseWriter, vin string) {
+func carDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 	// YOUR CODE GOES HERE
+
 	// Ensure you return a proper HTTP Code (instead of StatusNotImplemented above)
-	// Make sure the car is removed from disk
+	// HINT -> https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+
+	// Make sure the car is removed from garage
+}
+
+func extractVIN(p string) (string, error) {
+	if p == carsPath {
+		return "", nil
+	}
+
+	path := strings.TrimPrefix(p, carsPath)
+	if path == p {
+		return "", badPathPrefixErr
+	}
+
+	if path = strings.TrimPrefix(path, "/"); len(path) == vinLength {
+		return path, nil
+	}
+
+	return "", badVINLengthError
 }

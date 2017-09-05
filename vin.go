@@ -5,7 +5,10 @@ import (
 	"math/rand"
 )
 
-const vinLength = 17
+const (
+	vinLength         = 17
+	badVINLengthError = Error("Bad length for VIN")
+)
 
 func fakeVIN(m string) string {
 	const vinLetters = "ABCDEFGHJKLMNPRSTUVWXYZ1234567890"

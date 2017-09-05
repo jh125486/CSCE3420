@@ -11,20 +11,22 @@ func NewFakeCar(c string, y int, make, model string) *Car {
 	}
 }
 
-func init() { // load fixtures on start up
-	NewFakeCar("Black", 1985, "Mercedes-Benz", "300TD").persist()
-	NewFakeCar("Blue", 1994, "Ford", "Probe").persist()
-	NewFakeCar("Red", 1998, "Mitsuibishi", "3000GT").persist()
-	NewFakeCar("Red", 1996, "Ford", "Mustang").persist()
-	NewFakeCar("White", 2003, "Ford", "Focus").persist()
-	NewFakeCar("Green", 2003, "Toyota", "Hilux").persist()
-	NewFakeCar("Red", 2006, "Porsche", "Cayenne").persist()
-	NewFakeCar("Red", 2007, "Porsche", "Cayman").persist()
-	NewFakeCar("Blue", 2007, "Subaru", "WRX").persist()
-	NewFakeCar("Red", 2010, "Ford", "Raptor").persist()
-	NewFakeCar("Red", 2003, "Porsche", "Boxster").persist()
-	NewFakeCar("Silver", 2013, "Tesla", "Model S").persist()
-	NewFakeCar("Red", 2015, "Chevrolet", "Corvette").persist()
-	NewFakeCar("Blue", 2013, "Porsche", "Macan").persist()
-	NewFakeCar("Red", 2016, "Tesla", "Model S").persist()
+// LoadFixtures creates 16 fake cars with (hopefully) deterministic VINs
+func (g *Garage) LoadFixtures() { // load fixtures on start up
+	g.set(NewFakeCar("Black", 1985, "Mercedes-Benz", "300TD"))
+	g.set(NewFakeCar("Blue", 1994, "Ford", "Probe GT"))
+	g.set(NewFakeCar("Red", 1998, "Mitsuibishi", "3000GT VR-4 Spyder"))
+	g.set(NewFakeCar("Red", 1996, "Ford", "Mustang Cobra"))
+	g.set(NewFakeCar("White", 2003, "Ford", "Focus"))
+	g.set(NewFakeCar("Green", 2003, "Toyota", "Hilux"))
+	g.set(NewFakeCar("Red", 2006, "Porsche", "Cayenne Turbo"))
+	g.set(NewFakeCar("Red", 2007, "Porsche", "Cayman S"))
+	g.set(NewFakeCar("Blue", 2007, "Subaru", "WRX"))
+	g.set(NewFakeCar("Red", 2009, "Nissan", "GT-R"))
+	g.set(NewFakeCar("Red", 2010, "Ford", "Raptor"))
+	g.set(NewFakeCar("Red", 2003, "Porsche", "Boxster"))
+	g.set(NewFakeCar("Silver", 2013, "Tesla", "Model S"))
+	g.set(NewFakeCar("Red", 2015, "Chevrolet", "Corvette Z06"))
+	g.set(NewFakeCar("Blue", 2013, "Porsche", "Macan"))
+	g.set(NewFakeCar("Red", 2016, "Tesla", "Model S"))
 }
