@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	carsPath         = "/cars"
+	carsPath         = "/cars/"
 	badPathPrefixErr = Error("Bad path prefix")
 )
 
@@ -100,11 +100,11 @@ func carDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func extractVIN(p string) (string, error) {
-	if p == carsPath {
+	if p == carsPath || p == strings.TrimSuffix(carsPath, "/") {
 		return "", nil
 	}
-
 	path := strings.TrimPrefix(p, carsPath)
+
 	if path == p {
 		return "", badPathPrefixErr
 	}

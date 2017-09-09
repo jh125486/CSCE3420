@@ -170,23 +170,33 @@ func Test_CarsHandler_StatusMethodNotAllowed(t *testing.T) {
 func Test_ExtractVIN_success(t *testing.T) {
 	t.Parallel()
 	expVIN := strings.Repeat("x", vinLength)
-	if vin, err := extractVIN(carsPath + "/" + expVIN); vin != expVIN || err != nil {
+	if vin, err := extractVIN(carsPath + expVIN); vin != expVIN || err != nil {
 		t.Error("Failed to extract good VIN", vin)
 	}
 }
 
-func Test_ExtractVIN_blank(t *testing.T) {
+func Test_ExtractVIN_blank_no_error(t *testing.T) {
 	t.Parallel()
 	// No VIN given
 	if vin, err := extractVIN(carsPath); vin != "" || err != nil {
-		t.Error("Somehow extracted VIN from path:", vin)
-	}
-	// Bad prefix for handler
-	if vin, err := extractVIN("12345"); vin != "" || err == nil {
+		t.Errorf("Somehow extracted VIN '%v' from path, or got an error '%v'", vin, err)
 	}
 
-	if vin, err := extractVIN(carsPath + "/" + "12345"); vin != "" || err == nil {
-		t.Error("Somehow extracted VIN from path:", vin)
+	// No VIN given
+	if vin, err := extractVIN(strings.TrimSuffix(carsPath, "/")); vin != "" || err != nil {
+		t.Errorf("Somehow extracted VIN '%v' from path, or got an error '%v'", vin, err)
+	}
+}
+
+func Test_ExtractVIN_blank_with_error(t *testing.T) {
+	t.Parallel()
+	// Bad prefix for handler
+	if vin, err := extractVIN("12345"); vin != "" || err == nil {
+		t.Errorf("Somehow extracted VIN %v from path, or did not return an error", vin)
+	}
+
+	if vin, err := extractVIN(carsPath + "12345"); vin != "" || err == nil {
+		t.Errorf("Somehow extracted VIN %v from path, or did not return an error", vin)
 	}
 }
 
